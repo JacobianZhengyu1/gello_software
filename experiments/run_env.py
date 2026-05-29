@@ -114,7 +114,7 @@ def main(args):
         reset_joints_left = np.deg2rad([0, -90, -90, -90, 90, 0, 0])
         reset_joints_right = np.deg2rad([0, -90, 90, -90, -90, 0, 0])
         reset_joints = np.concatenate([reset_joints_left, reset_joints_right])
-        curr_joints = env.get_obs()["joint_positions"]
+        curr_joints = np.array(env.get_obs()["joint_positions"])
         max_delta = (np.abs(curr_joints - reset_joints)).max()
         steps = min(int(max_delta / 0.01), 100)
 
@@ -145,7 +145,8 @@ def main(args):
             else:
                 reset_joints = np.array(args.start_joints)
 
-            curr_joints = env.get_obs()["joint_positions"]
+            curr_joints = np.array(env.get_obs()["joint_positions"])
+
             if reset_joints.shape == curr_joints.shape:
                 max_delta = (np.abs(curr_joints - reset_joints)).max()
                 steps = min(int(max_delta / 0.01), 100)
@@ -178,9 +179,15 @@ def main(args):
     agent = instantiate_from_dict(agent_cfg)
     # going to start position
     print("Going to start position")
+
     start_pos = agent.act(env.get_obs())
+
     obs = env.get_obs()
-    joints = obs["joint_positions"]
+    joints = np.array(obs["joint_positions"])
+
+    # remove gripper dimension
+    if len(start_pos) != len(joints):
+        start_pos = start_pos[:len(joints)]
 
     abs_deltas = np.abs(start_pos - joints)
     id_max_joint_delta = np.argmax(abs_deltas)
@@ -207,19 +214,33 @@ def main(args):
     ), f"agent output dim = {len(start_pos)}, but env dim = {len(joints)}"
 
     max_delta = 0.05
+
     for _ in range(25):
         obs = env.get_obs()
+
         command_joints = agent.act(obs)
-        current_joints = obs["joint_positions"]
+        current_joints = np.array(obs["joint_positions"])
+
+        # remove gripper dimension
+        if len(command_joints) != len(current_joints):
+            command_joints = command_joints[:len(current_joints)]
+
         delta = command_joints - current_joints
+
         max_joint_delta = np.abs(delta).max()
+
         if max_joint_delta > max_delta:
             delta = delta / max_joint_delta * max_delta
+
         env.step(current_joints + delta)
 
     obs = env.get_obs()
-    joints = obs["joint_positions"]
+    joints = np.array(obs["joint_positions"])
+
     action = agent.act(obs)
+
+    if len(action) != len(joints):
+        action = action[:len(joints)]
     if (action - joints > 0.5).any():
         print("Action is too big")
 

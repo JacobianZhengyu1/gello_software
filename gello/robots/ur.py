@@ -8,31 +8,52 @@ from gello.robots.robot import Robot
 class URRobot(Robot):
     """A class representing a UR robot."""
 
-    def __init__(self, robot_ip: str = "192.168.1.10", no_gripper: bool = False):
-        import rtde_control
-        import rtde_receive
+    def __init__(self,
+             robot_ip: str = "192.168.1.101",
+             no_gripper: bool = False):
 
-        [print("in ur robot") for _ in range(4)]
-        try:
-            self.robot = rtde_control.RTDEControlInterface(robot_ip)
-        except Exception as e:
-            print(e)
-            print(robot_ip)
+        from rtde_control import RTDEControlInterface as RTDEControl
+        from rtde_receive import RTDEReceiveInterface as RTDEReceive
 
-        self.r_inter = rtde_receive.RTDEReceiveInterface(robot_ip)
+        print("before RTDEControl")
+
+        self.robot = RTDEControl(
+            robot_ip,
+            500.0,
+            RTDEControl.FLAG_USE_EXT_UR_CAP
+        )
+
+        print("after RTDEControl")
+
+        self.r_inter = RTDEReceive(robot_ip)
+
+        print("after RTDEReceive")
+
         if not no_gripper:
-            from gello.robots.robotiq_gripper import RobotiqGripper
+            try:
+                from gello.robots.robotiq_gripper import RobotiqGripper
 
-            self.gripper = RobotiqGripper()
-            self.gripper.connect(hostname=robot_ip, port=63352)
-            print("gripper connected")
-            # gripper.activate()
+                self.gripper = RobotiqGripper()
+                self.gripper.connect(
+                    hostname=robot_ip,
+                    port=63352
+                )
 
-        [print("connect") for _ in range(4)]
+                print("gripper connected")
+
+            except Exception as e:
+                print("Gripper connection failed:")
+                print(e)
 
         self._free_drive = False
-        self.robot.endFreedriveMode()
         self._use_gripper = not no_gripper
+
+        try:
+            self.robot.endFreedriveMode()
+        except:
+            pass
+
+        print("URRobot init done")
 
     def num_dofs(self) -> int:
         """Get the number of joints of the robot.
