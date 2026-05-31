@@ -1,3 +1,18 @@
+# GELLO Software (Extended Version)
+
+This repository is based on the original GELLO project and extends it with support for Universal Robots and PolyScope X.
+
+## Added Features
+
+- PolyScope X support
+- UR7e teleoperation
+- RTDE-based communication
+- Intel RealSense D455 integration
+- Custom teleoperation demos
+- Improved setup documentation
+- Custom demos
+
+
 # GELLO: General, Low-Cost, and Intuitive Teleoperation Framework
 
 <p align="center">
